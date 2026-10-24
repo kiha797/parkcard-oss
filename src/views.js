@@ -15,7 +15,8 @@ export const REPLIES = ['지금 바로 갈게요', '5분 안에 갈게요', '10�
 // 서비스 설명(일반 명칭). 운영 사이트는 브랜드 이름 옆에 함께 표시
 export const GENERIC_NAME = 'QR 주차번호판';
 
-export function layout(ctx, title, body, { head = '', scripts = '' } = {}) {
+// home: 맨 위 서비스 이름을 눌렀을 때 갈 곳 (관리자 화면은 /admin)
+export function layout(ctx, title, body, { head = '', scripts = '', home = '/' } = {}) {
   return `<!doctype html><html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#2563eb">
@@ -25,7 +26,7 @@ export function layout(ctx, title, body, { head = '', scripts = '' } = {}) {
 <link rel="icon" href="/icon-192.png"><link rel="apple-touch-icon" href="/icon-192.png">
 <link rel="stylesheet" href="/style.css">${head}</head>
 <body><main>
-<header class="top"><a href="/" class="logo">🚗 ${esc(ctx.serviceName)}${ctx.serviceName === GENERIC_NAME ? '' : ` <span class="logo-sub">${GENERIC_NAME}</span>`}</a></header>
+<header class="top"><a href="${esc(home)}" class="logo">🚗 ${esc(ctx.serviceName)}${ctx.serviceName === GENERIC_NAME ? '' : ` <span class="logo-sub">${GENERIC_NAME}</span>`}</a></header>
 ${body}
 <footer><a href="/about">이 서비스는?</a>${ctx.sourceUrl ? ` · <a href="${esc(ctx.sourceUrl)}" target="_blank" rel="noopener">소스 코드</a>` : ''}</footer>
 </main>${scripts}<script src="/update.js"></script></body></html>`;

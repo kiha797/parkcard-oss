@@ -18,14 +18,12 @@ body{margin:0;font-family:system-ui,'Apple SD Gothic Neo','Malgun Gothic',sans-s
 .big{width:110mm;height:160mm;margin:10mm auto;padding:8mm}
 .big .t1{font-size:7mm;font-weight:800}
 .big .qr{width:70mm;height:70mm}
-.big .code{font:800 13mm/1 ui-monospace,Consolas,monospace;letter-spacing:2mm}
-.big .how{font-size:4mm}.big .note{font-size:3.2mm;color:#444}
+.big .note{font-size:3.2mm;color:#444}
 .grid{display:grid;grid-template-columns:repeat(3,60mm);gap:4mm;justify-content:center;margin-top:6mm}
 .sticker{width:60mm;height:88mm;padding:4mm}
 .sticker .t1{font-size:4mm;font-weight:800}
 .sticker .qr{width:42mm;height:42mm}
-.sticker .code{font:800 8mm/1 ui-monospace,Consolas,monospace;letter-spacing:1mm}
-.sticker .how{font-size:2.6mm}.sticker .note{display:none}
+.sticker .note{display:none}
 .qr svg{width:100%;height:100%;display:block}
 
 /* 카드형: 신용카드 크기 85.6 × 54 mm. QR은 어떤 색상이든 흰 바탕 */
@@ -38,14 +36,11 @@ body{margin:0;font-family:system-ui,'Apple SD Gothic Neo','Malgun Gothic',sans-s
 .cc-side{flex:1;display:flex;flex-direction:column;justify-content:space-between;min-width:0}
 .cc-brand{font-size:2.4mm;font-weight:800;color:var(--ac);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cc-title{font-size:3.3mm;font-weight:900;line-height:1.15;margin-top:0.8mm}
-.cc-code{font:900 4.6mm/1 ui-monospace,Consolas,monospace;letter-spacing:.35mm;padding:1.2mm 0;
-  border-top:0.3mm solid var(--ac);border-bottom:0.3mm solid var(--ac);text-align:center}
-.cc-host{font-size:2.2mm;color:var(--mu);text-align:center}
+.cc-code{font:900 4.8mm/1 ui-monospace,Consolas,monospace;letter-spacing:.35mm;text-align:center;margin-top:0.6mm}
 .cc-back{flex-direction:column;justify-content:space-between;padding:5mm 6mm}
 .cc-b-title{font-size:4mm;font-weight:900;color:var(--ac)}
 .cc-back ol{margin:1mm 0 0;padding-left:5mm;font-size:3mm;line-height:1.55}
 .cc-b-note{font-size:2.8mm;font-weight:800}
-.cc-b-foot{font-size:2.3mm;color:var(--mu)}
 .t-navy{--bg:#1e3a8a;--fg:#fff;--ac:#fbbf24;--mu:#c7d2fe}
 .t-black{--bg:#111827;--fg:#fff;--ac:#4ade80;--mu:#cbd5e1}
 .t-yellow{--bg:#facc15;--fg:#111827;--ac:#111827;--mu:#3f3f46}
@@ -76,3 +71,20 @@ body{margin:0;font-family:system-ui,'Apple SD Gothic Neo','Malgun Gothic',sans-s
 .qi-row{display:flex;justify-content:space-between;gap:12px;padding:2px 0}
 .qi-row .on{color:#15803d}.qi-row .off{color:#64748b}
 .qi-raw{margin-top:4px;font:12px ui-monospace,Consolas,monospace;color:#475569;word-break:break-all}
+
+/* 'QR이 안 되면 주소창에 입력' — 놓치지 않게 상자로 */
+.alt{width:100%;border:0.5mm solid #111;border-radius:2.5mm;padding:2mm 3mm;text-align:center}
+.alt-label{font-weight:700}
+.alt-url{font-family:ui-monospace,Consolas,monospace;white-space:nowrap}
+.alt-url b{font-weight:900;letter-spacing:.12em;background:#111;color:#fff;border-radius:1.2mm;padding:0 1.4mm;margin-left:.6mm}
+.big .alt-label{font-size:4.2mm;margin-bottom:1.5mm}.big .alt-url{font-size:5mm}.big .alt-url b{font-size:9mm}
+.sticker .alt{padding:1.2mm 1.6mm;border-width:0.4mm}.sticker .alt-label{font-size:2.5mm;margin-bottom:.8mm}
+.sticker .alt-url{font-size:2.6mm}.sticker .alt-url b{font-size:4.6mm}
+.cc-alt{border:0.35mm dashed var(--ac);border-radius:1.6mm;padding:1.2mm 1.4mm;text-align:center}
+.cc-alt-label{font-size:2.2mm;font-weight:800;line-height:1.25}
+.cc-alt-host{font-size:2.1mm;color:var(--mu);margin-top:.6mm;font-family:ui-monospace,Consolas,monospace;white-space:nowrap}
+.cc-b-alt{border:0.35mm solid var(--ac);border-radius:1.8mm;padding:1.4mm 2mm;font-size:2.4mm;line-height:1.4}
+.cc-b-alt-title{font-weight:900;color:var(--ac);font-size:2.8mm}
+.cc-b-alt-url{font:700 3mm ui-monospace,Consolas,monospace;margin-top:.4mm}
+.cc-b-alt-url b{font-size:3.6mm;letter-spacing:.1em}
+.cc-back ol{font-size:2.8mm;line-height:1.45}

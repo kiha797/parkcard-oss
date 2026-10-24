@@ -177,7 +177,7 @@ app.get('/api/a/:id', async (c) => {
   return c.json({
     status: alert.status, html: V.statusInner(alert),
     code: alert.code, message: alert.message, created_at: alert.created_at,
-    ack_text: alert.ack_text, ack_at: alert.ack_at,
+    ack_text: alert.ack_text, ack_at: alert.ack_at, seen_at: alert.seen_at, done_at: alert.done_at,
   });
 });
 
@@ -207,6 +207,11 @@ async function ownerAlert(c) {
 app.get('/r/:id/:key', async (c) => {
   const found = await ownerAlert(c);
   if (!found) return html(c, V.notFound(c.get('ctx'), '알림을 찾을 수 없어요'), 404);
+  // 차주가 알림을 열어 봤다는 표시 → 연락한 사람 화면에 '차주 확인' 단계
+  if (!found.alert.seen_at) {
+    found.alert.seen_at = Date.now();
+    await run(c, 'UPDATE alerts SET seen_at = ? WHERE id = ? AND seen_at IS NULL', found.alert.seen_at, found.alert.id);
+  }
   return html(c, V.ownerReply(c.get('ctx'), found.alert, found.plate));
 });
 
@@ -214,7 +219,12 @@ app.post('/r/:id/:key', async (c) => {
   const found = await ownerAlert(c);
   if (!found) return html(c, V.notFound(c.get('ctx'), '알림을 찾을 수 없어요'), 404);
   const { alert, plate } = found;
-  const text = V.REPLIES[Number((await c.req.parseBody()).r)];
+  const body = await c.req.parseBody();
+  // '차를 이동했어요' (응답 뒤에만)
+  if (body.done === '1' && alert.status === 'ack' && !alert.done_at) {
+    await run(c, 'UPDATE alerts SET done_at = ? WHERE id = ?', Date.now(), alert.id);
+  }
+  const text = alert.status === 'ack' ? null : V.REPLIES[Number(body.r)];
   if (text) {
     await run(c, "UPDATE alerts SET status = 'ack', ack_text = ?, ack_at = ? WHERE id = ?", text, Date.now(), alert.id);
     // 연락한 사람이 알림을 허용해 뒀으면 휴대폰 알림창으로 응답 전달 (1회 사용 후 삭제)
@@ -230,7 +240,7 @@ app.post('/r/:id/:key', async (c) => {
       await run(c, 'DELETE FROM reply_subs WHERE alert_id = ?', alert.id);
     }
   }
-  return html(c, V.ownerReply(c.get('ctx'), await getAlert(c, alert.id), plate, { done: true }));
+  return html(c, V.ownerReply(c.get('ctx'), await getAlert(c, alert.id), plate));
 });
 
 // ───────── 카드 만들기 ─────────
@@ -398,6 +408,13 @@ app.post('/m/:token/delete', async (c) => {
 
 // 관리자 화면 (비밀번호: Cloudflare 비밀 값 ADMIN_PASSWORD)
 if (P.adminRoutes) app.route('/admin', P.adminRoutes({ one, all, run, allow, ipKey, keepMs: DELETED_KEEP_MS }));
+
+// 짧은 주소: park.labelpos.com/A7K2Q9 — QR이 안 될 때 주소창에 직접 입력 (대소문자 무관)
+app.get('/:code{[A-Za-z0-9]{6}}', async (c) => {
+  const code = U.normalizeCode(c.req.param('code'));
+  if (!(await getPlate(c, code))) return html(c, V.home(c.get('ctx'), { error: `'${code}' 코드를 찾을 수 없어요` }), 404);
+  return c.redirect(`/c/${code}`);
+});
 
 app.notFound((c) => html(c, V.notFound(c.get('ctx') || { serviceName: 'QR 주차번호판' }, '페이지를 찾을 수 없어요'), 404));
 

@@ -88,9 +88,13 @@
     if (a.created_at) item.at = a.created_at;
     item.ack_text = a.ack_text;
     item.ack_at = a.ack_at;
+    item.seen_at = a.seen_at;
+    var wasDone = !!item.done_at;
+    item.done_at = a.done_at;
     if (item.page && a.html) item.el.querySelector('.sent-status').innerHTML = a.html;   // /a/ 화면
     paint();
     if (was === 'sent' && a.status === 'ack') onAck(item);
+    else if (was !== 'loading' && !wasDone && a.done_at) onAck(item);   // '차를 이동했어요'도 소리로
   }
 
   function refresh(item) {
@@ -103,9 +107,19 @@
   function refreshWaiting() {
     Object.keys(items).forEach(function (id) {
       var it = items[id];
-      if (it.status === 'sent' && Date.now() - it.at < WATCH_MS) refresh(it);
+      // 응답 전, 그리고 응답 뒤 '이동 완료'가 오기 전까지 계속 확인
+      var open = it.status === 'sent' || (it.status === 'ack' && !it.done_at);
+      if (open && Date.now() - it.at < WATCH_MS) refresh(it);
     });
   }
+
+  // 응답 문구의 "N분" / "지금 바로" → 도착 예정까지 남은 분 (모르면 null)
+  function etaLeft(it) {
+    if (!it.ack_at || !it.ack_text) return null;
+    var m = /(\d+)\s*분/.exec(it.ack_text), min = m ? Number(m[1]) : /지금 바로/.test(it.ack_text) ? 2 : null;
+    return min === null ? null : Math.ceil((it.ack_at + min * 60000 - Date.now()) / 60000);
+  }
+  function minutesSince(ts) { return Math.max(0, Math.floor((Date.now() - ts) / 60000)); }
 
   // 화면을 보고 있으면 3초마다, 다른 화면을 보고 있으면 15초마다 확인
   var ticks = 0;
@@ -187,13 +201,38 @@
     var notify = result.querySelector('.notify-box');
     var canSend = !btn.disabled;   // 차주 기기가 없으면 처음부터 막혀 있음
 
-    var statusHtml = function (it, newest) {
-      if (it.status === 'ack') return '<div class="ack-line">✅ 차주 응답: <b>' + esc(it.ack_text) + '</b> <span class="muted small">' + timeText(it.ack_at) + '</span></div>';
-      if (it.status === 'failed') return '<div class="muted small">⚠️ 차주 휴대폰에 전달되지 않았어요</div>';
-      if (it.status === 'loading') return '<div class="muted small">확인 중…</div>';
-      return newest ? '<div class="waiting"><span class="dot"></span> 차주의 응답을 기다리는 중…</div>'
-        : '<div class="muted small">응답 없음</div>';
+    // 진행 단계: 보냄 → 전달 → 차주 확인 → 응답 → 이동 완료
+    var stepsHtml = function (it) {
+      var steps = [
+        ['보냄', true],
+        ['전달', it.status !== 'failed'],
+        ['차주 확인', !!(it.seen_at || it.status === 'ack')],
+        ['응답', it.status === 'ack'],
+        ['이동 완료', !!it.done_at],
+      ];
+      return '<ol class="steps-bar">' + steps.map(function (s) {
+        return '<li class="' + (s[1] ? 'on' : '') + '"><span></span>' + s[0] + '</li>';
+      }).join('') + '</ol>';
     };
+    var statusHtml = function (it, newest) {
+      if (it.status === 'loading') return '<div class="muted small">확인 중…</div>';
+      if (it.status === 'failed') return '<div class="muted small">⚠️ 차주 휴대폰에 전달되지 않았어요</div>';
+      var line;
+      if (it.done_at) line = '<div class="ack-line">🚗 <b>차주가 차를 이동했어요</b> <span class="muted small">' + timeText(it.done_at) + '</span></div>';
+      else if (it.status === 'ack') {
+        var left = etaLeft(it);
+        line = '<div class="ack-line">✅ 차주 응답: <b>' + esc(it.ack_text) + '</b> <span class="muted small">' + timeText(it.ack_at) + '</span></div>' +
+          (left === null ? '' : left > 0 ? '<div class="eta">⏱ 약 <b>' + left + '분</b> 뒤 도착 예정</div>' : '<div class="eta">⏱ 곧 도착해요</div>');
+      } else if (!newest) line = '<div class="muted small">응답 없음</div>';
+      else {
+        var mins = minutesSince(it.at);
+        line = '<div class="waiting"><span class="dot"></span> ' + (it.seen_at ? '차주가 알림을 확인했어요. 응답을 기다리는 중…' : '차주의 응답을 기다리는 중…') + '</div>' +
+          '<div class="muted small">' + (mins ? mins + '분째 기다리는 중' : '방금 보냈어요') + '</div>';
+      }
+      return (newest || it.status === 'ack' ? stepsHtml(it) : '') + line;
+    };
+    // 기다린 시간·도착 예정 시간이 저절로 줄어들게 20초마다 다시 그림
+    setInterval(function () { if (!document.hidden) paint(); }, 20000);
 
     // 화면 다시 그리기: 최근 차주 응답은 맨 위에 크게, 목록은 최신순
     paint = function () {
@@ -210,8 +249,13 @@
         .sort(function (a, b) { return (b.ack_at || 0) - (a.ack_at || 0); })[0];
       latest.hidden = !acked;
       if (acked) {
-        latest.innerHTML = '<div class="latest-title">✅ 차주 응답</div><div class="latest-text">' + esc(acked.ack_text) + '</div>' +
-          '<div class="muted small">' + timeText(acked.ack_at) + ' 응답 · 보낸 내용 "' + esc(acked.message) + '"</div>';
+        var left = etaLeft(acked);
+        latest.innerHTML = acked.done_at
+          ? '<div class="latest-title">🚗 이동 완료</div><div class="latest-text">차주가 차를 이동했어요</div>' +
+            '<div class="muted small">' + timeText(acked.done_at) + ' · 응답 "' + esc(acked.ack_text) + '"</div>'
+          : '<div class="latest-title">✅ 차주 응답</div><div class="latest-text">' + esc(acked.ack_text) + '</div>' +
+            (left === null ? '' : '<div class="eta big-eta">' + (left > 0 ? '⏱ 약 <b>' + left + '분</b> 뒤 도착 예정' : '⏱ 곧 도착해요') + '</div>') +
+            '<div class="muted small">' + timeText(acked.ack_at) + ' 응답 · 보낸 내용 "' + esc(acked.message) + '"</div>';
       }
       paintNotify(arr[0]);
     };

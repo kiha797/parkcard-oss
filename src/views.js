@@ -110,29 +110,33 @@ export function contact(ctx, plate, { quiet, error, devices, wait = 0, vapidKey 
   const radios = TEMPLATES.map((t, i) => `
     <label class="choice"><input type="radio" name="tpl" value="${i}" ${i === 0 ? 'checked' : ''}><span>${esc(t)}</span></label>`).join('');
   return layout(ctx, '차주에게 알림', `
-<section class="card hero">
+<section class="card hero hero-compact">
   ${plate.nickname ? callButton() : ''}
   ${carBadge(plate.nickname, '이 차량')}
-  <p class="muted">차주 휴대폰으로 알림을 보냅니다. <b>서로의 연락처는 공개되지 않아요.</b></p>
+  <p class="muted small">🔒 차주에게 알림만 가요 · 서로 연락처는 비공개</p>
 </section>
 ${!plate.nickname ? `<div class="flash err">차주가 아직 등록을 마치지 않아서 연락할 수 없어요.</div>`
     : devices ? '' : `<div class="flash err" id="no-devices">차주가 아직 알림을 켜지 않아서 연락할 수 없어요.</div>`}
 <section class="card" id="result" hidden>
   <div class="latest-ack" hidden></div>
+  <div class="current"></div>
   <div class="notify-box" hidden></div>
-  <h2>내가 보낸 연락</h2>
-  <div class="sent-list"></div>
 </section>
 <form method="post" action="/c/${esc(plate.code)}/alert" class="card" id="alert-form" data-wait="${wait}" data-key="${esc(vapidKey)}">
   <h2>어떤 일인가요?</h2>
-  <div class="choices">${radios}</div>
-  <textarea name="custom" maxlength="60" rows="2" placeholder="직접 입력 (60자 이내) — 쓰면 위에서 고른 문장 대신 이 내용이 가요"></textarea>
+  <div class="choices chips">${radios}</div>
+  <textarea name="custom" maxlength="60" rows="1" placeholder="✏️ 직접 입력 (60자 이내)"></textarea>
   ${quiet ? `<div class="flash warn">차주가 지금 <b>방해 금지 시간</b>으로 설정해 두었어요.<br>
     <label class="inline"><input type="checkbox" name="urgent" value="1"> 급한 상황이라 그래도 보낼게요</label></div>` : ''}
   <div class="form-msg">${flash(error)}</div>
-  <button class="btn primary big send-btn" ${devices && plate.nickname ? '' : 'disabled'} data-label="🔔 차주에게 알림 보내기">🔔 차주에게 알림 보내기</button>
-  <p class="muted small center">응답이 오면 이 화면에 소리와 함께 표시돼요. 화면을 켜 둬 주세요.</p>
-</form>`, { scripts: '<script src="/sound.js"></script><script src="/contact.js"></script>' });
+  <div class="send-bar">
+    <button class="btn primary big send-btn" ${devices && plate.nickname ? '' : 'disabled'} data-label="🔔 차주에게 알림 보내기">🔔 차주에게 알림 보내기</button>
+    <p class="muted small center">응답이 오면 이 화면에 소리와 함께 떠요</p>
+  </div>
+</form>
+<section class="card" id="history" hidden>
+  <details><summary>🕘 이전 연락 <span class="history-n"></span>건</summary><div class="sent-list"></div></details>
+</section>`, { scripts: '<script src="/sound.js"></script><script src="/contact.js"></script>' });
 }
 
 export function alertStatus(ctx, alert, plate, { wait = 0 } = {}) {

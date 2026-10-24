@@ -192,7 +192,9 @@
     var btn = form.querySelector('.send-btn');
     var msg = form.querySelector('.form-msg');
     var result = document.getElementById('result');
-    var list = result.querySelector('.sent-list');
+    var current = result.querySelector('.current');
+    var history = document.getElementById('history');
+    var list = history.querySelector('.sent-list');
     var latest = result.querySelector('.latest-ack');
     var notify = result.querySelector('.notify-box');
     var canSend = !btn.disabled;
@@ -240,25 +242,29 @@
     // 기다린 시간·도착 예정 시간이 저절로 줄어들게 20초마다 다시 그림
     setInterval(function () { if (!document.hidden) paint(); }, 20000);
 
-    // 화면 다시 그리기: 최근 차주 응답은 맨 위에 크게, 목록은 최신순
+    // 화면 다시 그리기: 가장 최근 연락만 보내기 버튼 위에 (응답은 크게), 이전 연락은 아래 접힌 목록으로
+    // → 연락이 쌓여도 보내기 버튼이 밀려 내려가지 않음
     paint = function () {
       var arr = Object.keys(items).map(function (k) { return items[k]; })
         .sort(function (a, b) { return b.at - a.at; });
       if (!arr.length) return;
       result.hidden = false;
+      var newest = arr[0];
       arr.forEach(function (it, i) {
         it.el.querySelector('.sent-msg').textContent = it.message ? '"' + it.message + '" · ' + timeText(it.at) + ' 보냄' : '확인 중…';
-        it.el.querySelector('.sent-status').innerHTML = statusHtml(it, i === 0);
-        list.appendChild(it.el);
+        // 최근 연락에 응답이 왔으면 응답은 위 큰 상자에, 여기는 진행 단계만
+        it.el.querySelector('.sent-status').innerHTML = i === 0 && it.status === 'ack' ? stepsHtml(it) : statusHtml(it, i === 0);
+        (i === 0 ? current : list).appendChild(it.el);
       });
-      var acked = arr.filter(function (it) { return it.status === 'ack'; })
-        .sort(function (a, b) { return (b.ack_at || 0) - (a.ack_at || 0); })[0];
+      history.hidden = arr.length < 2;
+      history.querySelector('.history-n').textContent = arr.length - 1;
+      var acked = newest.status === 'ack' ? newest : null;
       latest.hidden = !acked;
       if (acked) {
         var left = etaLeft(acked);
         latest.innerHTML = '<div class="latest-title">✅ 차주 응답</div><div class="latest-text">' + esc(acked.ack_text) + '</div>' +
             (left === null ? '' : '<div class="eta big-eta">' + (left > 0 ? '⏱ 약 <b>' + left + '분</b> 뒤 도착 예정' : '⏱ 곧 도착해요') + '</div>') +
-            '<div class="muted small">' + timeText(acked.ack_at) + ' 응답 · 보낸 내용 "' + esc(acked.message) + '"</div>';
+            '<div class="muted small">' + timeText(acked.ack_at) + ' 응답</div>';
       }
       paintNotify(arr[0]);
     };
@@ -339,7 +345,7 @@
         resetChoice();
         var it = addItem(d.id, Date.now());
         apply(it, { status: d.status, message: d.message, created_at: Date.now() });
-        result.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         countdown(btn, d.wait);
       }).catch(function () {
         btn.disabled = false;

@@ -32,6 +32,12 @@ const run = (c, sql, ...a) => db(c).prepare(sql).bind(...a).run();
 
 // BASE_URL을 안 정하면 접속한 주소를 그대로 사용
 const baseOf = (c) => (c.env.BASE_URL || new URL(c.req.url).origin).replace(/\/$/, '');
+// 카드 앞면(연락) QR 주소 / 차주 등록·관리 주소
+const contactUrl = (c, code) => {
+  const url = `${baseOf(c)}/C/${code}`;
+  return c.env.QR_UPPERCASE !== 'false' ? url.toUpperCase() : url;   // 대문자로 인코딩하면 QR이 단순해져 인식률 상승
+};
+const registerUrl = (c, token) => `${baseOf(c)}/m/${token}`;
 const qrSvg = (text, margin = 4) =>
   // 오류 복원 H(30%) + 여백 4칸: 흠집·반사·일부 가림에도 읽히도록
   QRCode.toString(text, { type: 'svg', errorCorrectionLevel: 'H', margin, color: { dark: '#000000', light: '#ffffff' } });
@@ -369,9 +375,10 @@ app.post('/m/:token/settings', async (c) => {
   if (!nickname) return c.redirect(`/m/${plate.manage_token}?e=plate`);
   // 방해 금지 칸이 없는 폼(차량 번호 입력 화면)에서 오면 기존 값 유지
   const hour = (v, old) => (v === undefined ? old : v === '' ? null : Math.min(23, Math.max(0, Number(v) | 0)));
-  await run(c, 'UPDATE plates SET nickname = ?, quiet_start = ?, quiet_end = ? WHERE code = ?',
-    nickname, hour(body.quiet_start, plate.quiet_start), hour(body.quiet_end, plate.quiet_end), plate.code);
-  return c.redirect(`/m/${plate.manage_token}?saved=1`);
+  await run(c, 'UPDATE plates SET nickname = ?, quiet_start = ?, quiet_end = ?, activated_at = COALESCE(activated_at, ?) WHERE code = ?',
+    nickname, hour(body.quiet_start, plate.quiet_start), hour(body.quiet_end, plate.quiet_end), Date.now(), plate.code);
+  // 미리 발급한 카드를 처음 등록한 경우: 다음 단계(알림 켜기·앱 설치)를 안내하는 환영 화면
+  return c.redirect(`/m/${plate.manage_token}?${plate.nickname ? 'saved' : 'created'}=1`);
 });
 
 app.get('/m/:token/print', async (c) => {
@@ -390,8 +397,7 @@ app.get('/card/:code', async (c) => {
 });
 
 async function printPage(c, plate, owner) {
-  let url = `${baseOf(c)}/C/${plate.code}`;
-  if (c.env.QR_UPPERCASE !== 'false') url = url.toUpperCase();
+  const url = contactUrl(c, plate.code);
   const layouts = P.cardFront ? ['big', 'sticker', 'card'] : ['big', 'sticker'];
   const layout = owner ? (layouts.includes(c.req.query('layout')) ? c.req.query('layout') : 'big') : 'card';
   const theme = P.CARD_THEMES?.[c.req.query('theme')] ? c.req.query('theme') : 'white';
@@ -403,13 +409,23 @@ async function printPage(c, plate, owner) {
 app.post('/m/:token/delete', async (c) => {
   const plate = await plateByToken(c, c.req.param('token'));
   if (!plate) return keyMissing(c);
+  if (plate.batch_id) {
+    await db(c).batch([
+      db(c).prepare('DELETE FROM reply_subs WHERE alert_id IN (SELECT id FROM alerts WHERE code = ?)').bind(plate.code),
+      db(c).prepare('DELETE FROM alerts WHERE code = ?').bind(plate.code),
+      db(c).prepare('DELETE FROM subscriptions WHERE code = ?').bind(plate.code),
+      db(c).prepare('UPDATE plates SET nickname = NULL, quiet_start = NULL, quiet_end = NULL, activated_at = NULL WHERE code = ?').bind(plate.code),
+    ]);
+    return html(c, V.simple(c.get('ctx'), '등록을 해제했어요',
+      '차량 번호·알림 기기·연락 기록을 모두 지웠어요. 등록 카드의 QR을 다시 찍으면 새로 등록할 수 있어요.', { href: '/', label: '처음으로' }));
+  }
   await run(c, 'UPDATE plates SET deleted_at = ? WHERE code = ?', Date.now(), plate.code);
   return html(c, V.simple(c.get('ctx'), '카드를 삭제했어요',
     '출력한 QR로는 더 이상 연락이 오지 않아요. 30일 뒤 모든 정보가 완전히 지워져요.', { href: '/', label: '처음으로' }));
 });
 
 // 관리자 화면 (비밀번호: Cloudflare 비밀 값 ADMIN_PASSWORD)
-if (P.adminRoutes) app.route('/admin', P.adminRoutes({ one, all, run, allow, ipKey, keepMs: DELETED_KEEP_MS }));
+if (P.adminRoutes) app.route('/admin', P.adminRoutes({ one, all, run, allow, ipKey, keepMs: DELETED_KEEP_MS, contactUrl, registerUrl }));
 
 // 짧은 주소: park.labelpos.com/A7K2Q9 — QR이 안 될 때 주소창에 직접 입력 (대소문자 무관)
 app.get('/:code{[A-Za-z0-9]{6}}', async (c) => {

@@ -168,3 +168,8 @@ details.more{margin:0}details.more[open] summary{margin-bottom:8px}
 #result .latest-ack{margin-bottom:10px}
 #history{padding:12px 18px}#history details{margin:0}#history summary{color:var(--muted)}
 #history .sent-list{margin-top:8px}
+.quick-counts{display:flex;gap:6px;flex-wrap:wrap}
+.batch-form .row label{min-width:140px}
+.reg-steps{display:flex;justify-content:center;gap:6px;list-style:none;padding:0;margin:12px 0;counter-reset:s}
+.reg-steps li{counter-increment:s;font-size:13px;color:var(--muted);padding:4px 10px;border-radius:99px;background:var(--bg)}
+.reg-steps li::before{content:counter(s) ". "}.reg-steps li.on{background:var(--pri);color:#fff;font-weight:700}

@@ -115,7 +115,7 @@ export function contact(ctx, plate, { quiet, error, devices, wait = 0, vapidKey 
   ${carBadge(plate.nickname, '이 차량')}
   <p class="muted small">🔒 차주에게 알림만 가요 · 서로 연락처는 비공개</p>
 </section>
-${!plate.nickname ? `<div class="flash err">차주가 아직 등록을 마치지 않아서 연락할 수 없어요.</div>`
+${!plate.nickname ? `<div class="flash err">아직 등록되지 않은 카드라 연락할 수 없어요.${plate.batch_id ? '<br><small>차주이신가요? 카드와 함께 받은 <b>🔑 차주 등록 카드</b>의 QR을 찍어 등록해 주세요.</small>' : ''}</div>`
     : devices ? '' : `<div class="flash err" id="no-devices">차주가 아직 알림을 켜지 않아서 연락할 수 없어요.</div>`}
 <section class="card" id="result" hidden>
   <div class="latest-ack" hidden></div>
@@ -207,10 +207,14 @@ export function newPlate(ctx, { error, vapidKey = '' } = {}) {
 
 // 차량 번호가 없는 (예전에 만든) 카드: 번호를 넣기 전에는 다른 기능을 막음
 export function plateRequired(ctx, plate, { error } = {}) {
-  return layout(ctx, '차량 번호 입력', `
-<section class="card">
-  <h1>내 카드 <span class="mono">${esc(plate.code)}</span></h1>
-  <p>서비스를 쓰려면 <b>차량 번호 뒷 4자리</b>를 먼저 입력해 주세요. 연락하는 사람이 차를 확인하는 데 쓰여요.</p>
+  const issued = !!plate.batch_id;
+  return layout(ctx, issued ? '카드 등록' : '차량 번호 입력', `
+<section class="card${issued ? ' hero' : ''}">
+  ${issued ? `<div class="big-emoji">🔑</div><h1>${esc(ctx.serviceName)} 카드 등록</h1>
+  <p class="muted">카드 <b class="mono">${esc(plate.code)}</b> · 1분이면 끝나요</p>
+  <ol class="reg-steps"><li class="on">차량 번호</li><li>알림 켜기</li><li>앱 설치</li></ol>`
+    : `<h1>내 카드 <span class="mono">${esc(plate.code)}</span></h1>`}
+  <p>${issued ? '' : '서비스를 쓰려면 '}<b>차량 번호 뒷 4자리</b>를 ${issued ? '' : '먼저 '}입력해 주세요. 연락하는 사람이 차를 확인하는 데 쓰여요.</p>
   ${flash(error)}
   <form method="post" action="/m/${esc(plate.manage_token)}/settings" class="stack">
     <label>차량 번호 뒷 4자리 <b class="req">(필수)</b> ${plateInput('')}</label>
@@ -261,8 +265,8 @@ export function manage(ctx, plate, { alerts, devices, vapidKey, manageUrl, qrSvg
     || '<li class="muted">알림 받는 기기가 없어요</li>';
   return layout(ctx, '내 카드', `
 <div id="live-alert" class="live-alert" hidden></div>
-${created ? `<section class="card hero"><div class="big-emoji">🎉</div><h1>카드를 만들었어요</h1>
-  <p>아래 준비를 마치면 연락을 받을 수 있어요.</p></section>` : ''}
+${created ? `<section class="card hero"><div class="big-emoji">🎉</div><h1>${plate.batch_id ? '등록했어요' : '카드를 만들었어요'}</h1>
+  <p>${plate.batch_id ? '이제 <b>알림 켜기</b>와 <b>앱 설치</b>만 하면 연락을 받을 수 있어요.' : '아래 준비를 마치면 연락을 받을 수 있어요.'}</p></section>` : ''}
 
 <section class="card dash">
   <div class="dash-head">
@@ -291,8 +295,9 @@ ${pending.length ? `<section class="card pending"><h2>💬 답하지 않은 연�
   <p class="install-msg muted">바탕화면에 ${esc(ctx.serviceName)} 아이콘을 만들어요.</p>
   <button class="btn primary big install-btn" type="button">📲 앱 설치</button>
   <div class="keybox">
-    <p><b>⚠️ 이 페이지 주소가 열쇠예요.</b> 잃어버리면 다시 찾을 수 없어요 (개인정보를 받지 않기 때문).
-      앱을 설치하면 바탕화면 아이콘으로 바로 열려요.</p>
+    ${plate.batch_id ? `<p><b>🔑 등록 카드를 잘 보관하세요.</b> 휴대폰을 바꾸거나 이 화면을 잃어버려도 등록 카드 QR을 다시 찍으면 열려요.
+      앱을 설치하면 바탕화면 아이콘으로 바로 열려요.</p>` : `<p><b>⚠️ 이 페이지 주소가 열쇠예요.</b> 잃어버리면 다시 찾을 수 없어요 (개인정보를 받지 않기 때문).
+      앱을 설치하면 바탕화면 아이콘으로 바로 열려요.</p>`}
     <button class="btn small" data-copy="${esc(manageUrl)}">관리 링크 복사</button>
   </div>
 </section>
@@ -348,11 +353,11 @@ ${pending.length ? `<section class="card pending"><h2>💬 답하지 않은 연�
 <div id="push-slot"></div>
 
 <section class="card">
-  <details class="more"><summary>🔑 관리 링크 · 카드 삭제</summary>
+  <details class="more"><summary>🔑 관리 링크 · ${plate.batch_id ? '등록 해제' : '카드 삭제'}</summary>
     <p class="muted small">이 화면 주소가 카드의 열쇠예요. 다른 기기에서 열 때 쓰세요.</p>
     <button class="btn small" data-copy="${esc(manageUrl)}">관리 링크 복사</button>
-    <form method="post" action="/m/${t}/delete" class="danger-zone" onsubmit="if (!confirm('카드를 삭제하면 출력한 QR도 더 이상 쓸 수 없어요. 삭제할까요?')) return false; if (window.MyCards) MyCards.remove('${t}');">
-      <button class="btn danger">카드 삭제</button>
+    <form method="post" action="/m/${t}/delete" class="danger-zone" onsubmit="if (!confirm(${plate.batch_id ? `'등록을 해제하면 차량 번호·알림 기기·연락 기록이 지워지고, 등록 카드로 다시 등록할 수 있어요. 해제할까요?'` : `'카드를 삭제하면 출력한 QR도 더 이상 쓸 수 없어요. 삭제할까요?'`})) return false; if (window.MyCards) MyCards.remove('${t}');">
+      <button class="btn danger">${plate.batch_id ? '등록 해제 (카드 초기화)' : '카드 삭제'}</button>
     </form>
   </details>
 </section>`, {

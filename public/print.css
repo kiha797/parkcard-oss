@@ -90,3 +90,16 @@ body{margin:0;font-family:system-ui,'Apple SD Gothic Neo','Malgun Gothic',sans-s
 .cc-b-alt-url{font:700 3mm ui-monospace,Consolas,monospace;margin-top:.4mm}
 .cc-b-alt-url b{font-size:3.6mm;letter-spacing:.1em}
 .cc-back ol{font-size:2.8mm;line-height:1.45}
+
+/* 차주 등록 카드 (카드와 함께 포장) — 앞면과 헷갈리지 않게 어두운 열쇠 디자인 */
+.cc-reg{--bg:#0f172a;--fg:#fff;--ac:#facc15;--mu:#cbd5e1}
+.cc-reg-qr{flex-basis:40mm;height:40mm;align-self:center}
+.cc-reg-title{font-size:4mm;font-weight:900;color:var(--ac);white-space:nowrap}
+.cc-reg-sub{font-size:2.3mm;color:var(--mu);margin-top:.4mm;white-space:nowrap}.cc-reg-sub b{color:var(--fg);letter-spacing:.2mm}
+.cc-reg-steps{margin:0;padding-left:4mm;font-size:2.6mm;line-height:1.45;font-weight:700}
+.cc-reg-warn{font-size:2.2mm;line-height:1.35;border:0.35mm solid var(--ac);border-radius:1.6mm;padding:1mm 1.4mm}
+.cc-reg-warn b{color:var(--ac)}
+/* 일괄 인쇄: 2장씩 한 줄 */
+.sheet-grid{display:grid;grid-template-columns:repeat(2,85.6mm);gap:6mm 8mm;justify-content:center;margin:8mm 0}
+.cc-empty{width:85.6mm;height:54mm}
+@media print{.sheet-grid{margin:0}}

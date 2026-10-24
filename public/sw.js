@@ -6,7 +6,7 @@ self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
 self.addEventListener('push', (e) => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch { d = { body: e.data && e.data.text() }; }
-  const shown = self.registration.showNotification(d.title || '🚗 QR 주차번호판', {
+  const shown = self.registration.showNotification(d.title || '🚗 주차 연락이 왔어요', {
     body: d.body || '',
     tag: d.tag,
     renotify: true,

@@ -21,6 +21,7 @@ var env = (function () {
   };
 })();
 
+var APP_NAME = (document.querySelector('meta[name="application-name"]') || {}).content || 'QR 주차번호판';
 var here = location.host + location.pathname;
 var hereUrl = 'https://' + here;
 
@@ -183,26 +184,26 @@ var Dash = (function () {
 
   window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; });
   window.addEventListener('appinstalled', function () {
-    msg.innerHTML = '✅ 설치했어요! 바탕화면의 <b>QR 주차번호판</b> 아이콘으로 열어서 알림을 켜 주세요.';
+    msg.innerHTML = '✅ 설치했어요! 바탕화면의 <b>' + APP_NAME + '</b> 아이콘으로 열어서 알림을 켜 주세요.';
     btn.hidden = true;
     Dash.app(true, '설치함');
   });
 
-  if (env.ios) msg.innerHTML = '바탕화면에 QR 주차번호판 아이콘을 만들어요. <b>아이폰은 설치한 앱에서만 알림을 받을 수 있어요.</b>';
+  if (env.ios) msg.innerHTML = '바탕화면에 ' + APP_NAME + ' 아이콘을 만들어요. <b>아이폰은 설치한 앱에서만 알림을 받을 수 있어요.</b>';
 
   btn.onclick = function () {
     if (env.ios) return showIosGuide();
     if (deferred) {
       deferred.prompt();
       deferred.userChoice.then(function (r) {
-        if (r.outcome === 'accepted') msg.innerHTML = '✅ 설치하고 있어요. 바탕화면의 <b>QR 주차번호판</b> 아이콘으로 열어 주세요.';
+        if (r.outcome === 'accepted') msg.innerHTML = '✅ 설치하고 있어요. 바탕화면의 <b>' + APP_NAME + '</b> 아이콘으로 열어 주세요.';
         deferred = null;
       });
       return;
     }
     // 이미 설치했거나 Chrome이 아직 설치 준비 중일 때
     msg.innerHTML = env.android
-      ? '오른쪽 위 <b>⋮ 메뉴 → "앱 설치"</b> (또는 "홈 화면에 추가")를 눌러 주세요. 이미 설치했다면 바탕화면의 QR 주차번호판 아이콘으로 여세요.'
+      ? '오른쪽 위 <b>⋮ 메뉴 → "앱 설치"</b> (또는 "홈 화면에 추가")를 눌러 주세요. 이미 설치했다면 바탕화면의 ' + APP_NAME + ' 아이콘으로 여세요.'
       : '주소창 오른쪽의 <b>설치 아이콘</b>을 누르거나, 브라우저 메뉴에서 "앱 설치"를 찾아 주세요.';
   };
 })();
@@ -217,7 +218,7 @@ function showIosGuide() {
     '<li>화면 아래쪽의 <b>공유 버튼</b> <span class="ios-ico">□↑</span> 누르기<br><small>안 보이면 화면을 살짝 위로 올리거나, <b>···</b> 버튼을 누르면 있어요</small></li>' +
     '<li>목록을 아래로 내려 <b>"홈 화면에 추가"</b> 누르기</li>' +
     '<li>오른쪽 위 <b>"추가"</b> 누르기</li>' +
-    '<li>바탕화면의 <b>QR 주차번호판</b> 아이콘으로 열어서 알림 켜기</li>' +
+    '<li>바탕화면의 <b>' + APP_NAME + '</b> 아이콘으로 열어서 알림 켜기</li>' +
     '</ol>' +
     '<button type="button" class="btn">닫기</button>' +
     '</div>' +
@@ -251,7 +252,7 @@ function showIosGuide() {
 
   // 아이폰은 설치한 앱에서만 푸시 가능
   if (env.ios && !env.standalone) {
-    show('아이폰은 <b>📲 앱 설치</b>를 먼저 하고, 바탕화면의 QR 주차번호판 아이콘으로 열어서 알림을 켜 주세요.');
+    show('아이폰은 <b>📲 앱 설치</b>를 먼저 하고, 바탕화면의 ' + APP_NAME + ' 아이콘으로 열어서 알림을 켜 주세요.');
     btnOn.hidden = true;
     Dash.push('off', '아이폰은 앱을 설치한 뒤, 앱에서 알림을 켜요');
     return;
@@ -277,7 +278,7 @@ function showIosGuide() {
       ui(false);
       if (Notification.permission === 'denied') {
         Dash.push('err', '휴대폰 설정에서 알림이 차단되어 있어요');
-        show('알림이 <b>차단</b>되어 있어요. 휴대폰 <b>설정 → 알림</b>에서 ' + (env.standalone ? 'QR 주차번호판' : '이 브라우저') + '의 알림을 허용해 주세요.', 'err');
+        show('알림이 <b>차단</b>되어 있어요. 휴대폰 <b>설정 → 알림</b>에서 ' + (env.standalone ? APP_NAME : '이 브라우저') + '의 알림을 허용해 주세요.', 'err');
         return;
       }
       // 기본은 켜기: 화면 어디든 처음 누르면 허용 창 (브라우저는 누를 때만 허용 창을 띄울 수 있음)

@@ -12,16 +12,20 @@ export const TEMPLATES = [
 // 차주 응답 문구 (DB에는 문구 그대로 저장). "N분"이 들어 있으면 연락한 사람 화면에 도착 예정 시간을 보여 줌
 export const REPLIES = ['지금 바로 갈게요', '5분 안에 갈게요', '10분 안에 갈게요', '30분 정도 걸려요', '지금은 이동이 어려워요', '알려주셔서 감사해요'];
 
+// 서비스 설명(일반 명칭). 운영 사이트는 브랜드 이름 옆에 함께 표시
+export const GENERIC_NAME = 'QR 주차번호판';
+
 export function layout(ctx, title, body, { head = '', scripts = '' } = {}) {
   return `<!doctype html><html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#2563eb">
 <meta name="app-version" content="${esc(ctx.version)}">
+<meta name="application-name" content="${esc(ctx.serviceName)}">
 <title>${esc(title)} · ${esc(ctx.serviceName)}</title>
 <link rel="icon" href="/icon-192.png"><link rel="apple-touch-icon" href="/icon-192.png">
 <link rel="stylesheet" href="/style.css">${head}</head>
 <body><main>
-<header class="top"><a href="/" class="logo">🚗 ${esc(ctx.serviceName)}</a></header>
+<header class="top"><a href="/" class="logo">🚗 ${esc(ctx.serviceName)}${ctx.serviceName === GENERIC_NAME ? '' : ` <span class="logo-sub">${GENERIC_NAME}</span>`}</a></header>
 ${body}
 <footer><a href="/about">이 서비스는?</a> · <a href="${esc(ctx.sourceUrl || '#')}" target="_blank" rel="noopener">소스 코드</a></footer>
 </main>${scripts}<script src="/update.js"></script></body></html>`;
@@ -280,7 +284,7 @@ ${pending.length ? `<section class="card pending"><h2>💬 답하지 않은 연�
 
 <section class="card" id="install">
   <h2>📲 앱 설치</h2>
-  <p class="install-msg muted">바탕화면에 QR 주차번호판 아이콘을 만들어요.</p>
+  <p class="install-msg muted">바탕화면에 ${esc(ctx.serviceName)} 아이콘을 만들어요.</p>
   <button class="btn primary big install-btn" type="button">📲 앱 설치</button>
   <div class="keybox">
     <p><b>⚠️ 이 페이지 주소가 열쇠예요.</b> 잃어버리면 다시 찾을 수 없어요 (개인정보를 받지 않기 때문).
@@ -403,6 +407,7 @@ export function print(ctx, plate, { qrSvg, qrUrl, host, layout: kind, theme, own
       <div class="alt-url"><span>${esc(host)}/</span><b>${code}</b></div>
     </div>
     <div class="note">전화번호 없이 차주 휴대폰으로 알림이 갑니다</div>
+    <div class="brand">🚗 ${esc(ctx.serviceName)}</div>
   </div>`;
   // 카드형 디자인은 비공개 모듈(src/private)에 있음 — 공개판에서는 카드형 없이 큰 카드·스티커만
   const cards = !!P.cardFront;

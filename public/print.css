@@ -19,6 +19,7 @@ body{margin:0;font-family:system-ui,'Apple SD Gothic Neo','Malgun Gothic',sans-s
 .big .t1{font-size:7mm;font-weight:800}
 .big .qr{width:70mm;height:70mm}
 .big .note{font-size:3.2mm;color:#444}
+.brand{font-weight:800;color:#2563eb}.big .brand{font-size:3.6mm;margin-top:1.5mm}.sticker .brand{font-size:2.4mm;margin-top:.8mm}
 .grid{display:grid;grid-template-columns:repeat(3,60mm);gap:4mm;justify-content:center;margin-top:6mm}
 .sticker{width:60mm;height:88mm;padding:4mm}
 .sticker .t1{font-size:4mm;font-weight:800}
@@ -34,7 +35,8 @@ body{margin:0;font-family:system-ui,'Apple SD Gothic Neo','Malgun Gothic',sans-s
   --bg:#fff;--fg:#0f172a;--ac:#2563eb;--mu:#475569;background:var(--bg);color:var(--fg)}
 .cc-qr{flex:0 0 47mm;height:47mm;background:#fff;border-radius:2mm;padding:0.6mm}
 .cc-side{flex:1;display:flex;flex-direction:column;justify-content:space-between;min-width:0}
-.cc-brand{font-size:2.4mm;font-weight:800;color:var(--ac);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc-brand{font-size:3.4mm;font-weight:800;color:var(--ac);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc-brand-sub{display:block;font-size:1.8mm;font-weight:600;opacity:.75;margin-top:.2mm}
 .cc-title{font-size:3.3mm;font-weight:900;line-height:1.15;margin-top:0.8mm}
 .cc-code{font:900 4.8mm/1 ui-monospace,Consolas,monospace;letter-spacing:.35mm;text-align:center;margin-top:0.6mm}
 .cc-back{flex-direction:column;justify-content:space-between;padding:5mm 6mm}

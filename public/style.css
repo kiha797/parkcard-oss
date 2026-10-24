@@ -154,3 +154,4 @@ main:has(.admin-table){max-width:1000px}
 details.more{margin:0}details.more[open] summary{margin-bottom:8px}
 .danger-zone{margin-top:14px}
 :target{scroll-margin-top:12px}
+.logo-sub{font-size:12px;font-weight:600;color:var(--muted);margin-left:2px}

@@ -132,11 +132,52 @@ function saveDevice(token, sub) {
   if (p && window.MyCards) MyCards.add({ token: p.dataset.token, code: p.dataset.code, nickname: p.dataset.plate });
 })();
 
+// ───────── 대시보드: 맨 위 준비 상태 + 타일 ─────────
+var Dash = (function () {
+  var st = { app: null, push: null, hint: '' };
+  function tile(id, val, kind) {
+    var el = document.getElementById('tile-' + id);
+    if (!el) return;
+    el.className = 'tile ' + (kind || '');
+    el.querySelector('.tile-val').textContent = val;
+  }
+  function paint() {
+    var el = document.getElementById('ready');
+    if (!el || st.push === null) return;
+    var kind, icon, title, sub, href;
+    if (st.push === 'on') {
+      kind = 'ok'; icon = '✅'; title = '연락 받을 준비 완료';
+      sub = st.app === false ? '앱을 설치하면 바탕화면에서 바로 열 수 있어요' : '연락이 오면 휴대폰 알림으로 알려 드려요';
+      href = st.app === false ? '#install' : '#alerts';
+    } else {
+      kind = st.push === 'err' ? 'err' : 'warn'; icon = '⚠️'; title = '아직 연락을 받을 수 없어요';
+      sub = st.hint || '알림을 켜 주세요';
+      href = env.ios && !env.standalone ? '#install' : '#push';
+    }
+    el.className = 'ready ' + kind;
+    el.href = href;
+    el.querySelector('.ready-ico').textContent = icon;
+    el.querySelector('.ready-title').textContent = title;
+    el.querySelector('.ready-sub').textContent = sub;
+  }
+  return {
+    app: function (ok, text) { st.app = ok; tile('app', text || (ok ? '설치됨' : '설치 전'), ok ? 'ok' : ''); paint(); },
+    push: function (state, hint) {
+      st.push = state; st.hint = hint || '';
+      var n = document.querySelectorAll('#push .list li form').length;
+      tile('push', state === 'on' ? '켜짐' + (n > 1 ? ' · ' + n + '대' : '') : state === 'err' ? '사용 불가' : '꺼짐',
+        state === 'on' ? 'ok' : state === 'err' ? 'err' : 'warn');
+      paint();
+    },
+  };
+})();
+
 // ───────── 앱 설치 ─────────
 (function () {
   var box = document.getElementById('install');
   if (!box || locked) return;
-  if (env.standalone) { box.hidden = true; return; }
+  if (env.standalone) { box.hidden = true; Dash.app(true); return; }
+  Dash.app(false);
   var btn = box.querySelector('.install-btn'), msg = box.querySelector('.install-msg');
   var deferred = null;
 
@@ -144,6 +185,7 @@ function saveDevice(token, sub) {
   window.addEventListener('appinstalled', function () {
     msg.innerHTML = '✅ 설치했어요! 바탕화면의 <b>QR 주차번호판</b> 아이콘으로 열어서 알림을 켜 주세요.';
     btn.hidden = true;
+    Dash.app(true, '설치함');
   });
 
   if (env.ios) msg.innerHTML = '바탕화면에 QR 주차번호판 아이콘을 만들어요. <b>아이폰은 설치한 앱에서만 알림을 받을 수 있어요.</b>';
@@ -193,7 +235,13 @@ function showIosGuide() {
       btnTest = box.querySelector('.push-test'), btnOff = box.querySelector('.push-off');
 
   function show(text, kind) { msg.className = 'push-msg flash ' + (kind || 'warn'); msg.innerHTML = text; }
-  function ui(on) { btnOn.hidden = on; btnTest.hidden = !on; btnOff.hidden = !on; }
+  function ui(on) {
+    btnOn.hidden = on; btnTest.hidden = !on; btnOff.hidden = !on;
+    Dash.push(on ? 'on' : 'off');
+    // 준비가 끝나면 알림 관리는 아래로 (대시보드처럼 위에는 요약·연락만)
+    var slot = document.getElementById('push-slot');
+    if (on && slot && box.parentNode !== slot) slot.appendChild(box);
+  }
 
   function post(path, body) {
     return fetch('/m/' + token + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) })
@@ -203,8 +251,9 @@ function showIosGuide() {
 
   // 아이폰은 설치한 앱에서만 푸시 가능
   if (env.ios && !env.standalone) {
-    show('아이폰은 <b>① 앱 설치</b>를 먼저 하고, 바탕화면의 QR 주차번호판 아이콘으로 열어서 알림을 켜 주세요.');
+    show('아이폰은 <b>📲 앱 설치</b>를 먼저 하고, 바탕화면의 QR 주차번호판 아이콘으로 열어서 알림을 켜 주세요.');
     btnOn.hidden = true;
+    Dash.push('off', '아이폰은 앱을 설치한 뒤, 앱에서 알림을 켜요');
     return;
   }
   if (!env.pushApi) {
@@ -212,6 +261,7 @@ function showIosGuide() {
       ? '이 아이폰은 알림을 지원하지 않아요. <b>설정 → 일반 → 소프트웨어 업데이트</b>에서 iOS 16.4 이상으로 업데이트해 주세요.'
       : '이 브라우저는 알림을 지원하지 않아요. Chrome, Edge, Safari 최신 버전에서 열어 주세요.', 'err');
     btnOn.hidden = true;
+    Dash.push('err', '이 브라우저는 알림을 지원하지 않아요');
     return;
   }
 
@@ -226,6 +276,7 @@ function showIosGuide() {
       if (Notification.permission === 'granted') return enable();
       ui(false);
       if (Notification.permission === 'denied') {
+        Dash.push('err', '휴대폰 설정에서 알림이 차단되어 있어요');
         show('알림이 <b>차단</b>되어 있어요. 휴대폰 <b>설정 → 알림</b>에서 ' + (env.standalone ? 'QR 주차번호판' : '이 브라우저') + '의 알림을 허용해 주세요.', 'err');
         return;
       }
@@ -236,7 +287,7 @@ function showIosGuide() {
         if (Notification.permission === 'default' && !btnOn.contains(e.target)) enable();
       }, true);
     })
-    .catch(function (e) { show('알림 기능을 준비하지 못했어요: ' + e.message, 'err'); btnOn.hidden = true; });
+    .catch(function (e) { show('알림 기능을 준비하지 못했어요: ' + e.message, 'err'); btnOn.hidden = true; Dash.push('err', '알림 기능을 준비하지 못했어요'); });
 
   function enable() {
     btnOn.disabled = true;

@@ -1,4 +1,4 @@
-import { esc, kstString } from './util.js';
+import { esc, kstString, inQuietHours } from './util.js';
 import * as P from './private/index.js';
 
 export const TEMPLATES = [
@@ -214,6 +214,7 @@ export function plateRequired(ctx, plate, { error } = {}) {
 export function manage(ctx, plate, { alerts, devices, vapidKey, manageUrl, qrSvg, saved, created, error }) {
   const hours = (sel) => ['<option value="">없음</option>', ...Array.from({ length: 24 }, (_, h) =>
     `<option value="${h}" ${sel === h ? 'selected' : ''}>${String(h).padStart(2, '0')}:00</option>`)].join('');
+  const t = esc(plate.manage_token);
   // 응답하지 않은 알림은 바로 답하기
   const replyLink = (a, label) => `<a class="btn small ${a.status === 'sent' ? 'primary' : ''}" href="/r/${esc(a.id)}/${esc(a.owner_key)}">${label}</a>`;
   // 보낸 사람 구분: 처음 연락한 순서대로 A, B, C… (같은 글자 = 같은 사람)
@@ -229,39 +230,72 @@ export function manage(ctx, plate, { alerts, devices, vapidKey, manageUrl, qrSvg
     const name = n < 26 ? String.fromCharCode(65 + n) : String(n + 1);
     return `<span class="who who-${n % 6}" title="같은 글자는 같은 사람이 보낸 연락이에요">👤 ${name}${count[a.sender] > 1 ? ` · ${count[a.sender]}회` : ''}</span>`;
   };
-  const rows = alerts.map((a) => `<li>${senderChip(a)} <b>${kstString(a.created_at)}</b> ${esc(a.message)}
-    <span class="tag ${a.status}">${a.status === 'ack' ? esc(a.ack_text) : a.status === 'failed' ? '전달 실패' : '응답 안 함'}</span>
-    ${a.status === 'sent' ? replyLink(a, '답하기') : ''}</li>`).join('')
-    || '<li class="muted">아직 받은 알림이 없어요</li>';
+  const row = (a) => `<li class="arow">
+    <div class="arow-top">${senderChip(a)}<span class="arow-time">${kstString(a.created_at)}</span>
+      <span class="tag ${a.status}">${a.status === 'ack' ? esc(a.ack_text) : a.status === 'failed' ? '전달 실패' : '응답 안 함'}</span></div>
+    <div class="arow-msg">${esc(a.message)}</div>
+    ${a.status === 'sent' ? `<div class="arow-act">${replyLink(a, '답하기')}</div>` : ''}</li>`;
+  const rows = alerts.map(row).join('') || '<li class="muted empty">아직 받은 알림이 없어요</li>';
+
+  // 대시보드 요약
+  const now = Date.now(), DAY = 24 * 3600_000;
+  const pending = alerts.filter((a) => a.status === 'sent' && now - a.created_at < DAY);
+  const recent = alerts.filter((a) => now - a.created_at < DAY).length;
+  const hh = (h) => `${String(h).padStart(2, '0')}:00`;
+  const quietSet = plate.quiet_start != null && plate.quiet_end != null && plate.quiet_start !== plate.quiet_end;
+  const quietNow = quietSet && inQuietHours(plate.quiet_start, plate.quiet_end);
+  const tile = (id, href, icon, label, value, state = '') =>
+    `<a class="tile ${state}" id="tile-${id}" href="${href}"><span class="tile-ico">${icon}</span>
+      <span class="tile-label">${label}</span><b class="tile-val">${value}</b></a>`;
+
   const devs = devices.map((d) => `<li>${esc(d.device || '기기')} <span class="muted small">${kstString(d.created_at)} 등록</span>
-    <form method="post" action="/m/${esc(plate.manage_token)}/devices/${d.id}/delete" class="inline-form"><button class="linkbtn">삭제</button></form></li>`).join('')
+    <form method="post" action="/m/${t}/devices/${d.id}/delete" class="inline-form"><button class="linkbtn">삭제</button></form></li>`).join('')
     || '<li class="muted">알림 받는 기기가 없어요</li>';
   return layout(ctx, '내 카드', `
+<div id="live-alert" class="live-alert" hidden></div>
 ${created ? `<section class="card hero"><div class="big-emoji">🎉</div><h1>카드를 만들었어요</h1>
-  <p>아래 순서대로 진행해 주세요.</p></section>` : ''}
-<section class="card">
-  <h1>내 카드 <span class="mono">${esc(plate.code)}</span></h1>
+  <p>아래 준비를 마치면 연락을 받을 수 있어요.</p></section>` : ''}
+
+<section class="card dash">
+  <div class="dash-head">
+    <div><div class="dash-label">내 차량</div><div class="dash-plate">${esc(plate.nickname)}</div></div>
+    <div class="dash-code"><div class="dash-label">카드 코드</div><b class="mono">${esc(plate.code)}</b></div>
+  </div>
+  <a class="ready ${devices.length ? '' : 'warn'}" id="ready" href="#push">
+    <span class="ready-ico">${devices.length ? '⏳' : '⚠️'}</span>
+    <span><b class="ready-title">${devices.length ? '확인 중…' : '아직 연락을 받을 수 없어요'}</b>
+      <span class="ready-sub">${devices.length ? '' : '알림을 켜 주세요'}</span></span>
+  </a>
+  <div class="tiles">
+    ${tile('push', '#push', '🔔', '알림', devices.length ? `기기 ${devices.length}대` : '꺼짐', devices.length ? '' : 'warn')}
+    ${tile('app', '#install', '📲', '앱', '확인 중')}
+    ${tile('quiet', '#settings', '🌙', '방해 금지', quietSet ? `${hh(plate.quiet_start)}–${hh(plate.quiet_end)}` : '꺼짐', quietNow ? 'info' : '')}
+    ${tile('alerts', '#alerts', '📨', '24시간 연락', `${recent}건${pending.length ? ` · 미응답 ${pending.length}` : ''}`, pending.length ? 'warn' : '')}
+  </div>
+  ${quietNow ? `<p class="muted small dash-note">🌙 지금은 방해 금지 시간이에요. '급한 상황' 연락만 알림이 와요.</p>` : ''}
+</section>
+
+${pending.length ? `<section class="card pending"><h2>💬 답하지 않은 연락 ${pending.length}건</h2>
+  <ul class="list">${pending.map(row).join('')}</ul></section>` : ''}
+
+<section class="card" id="install">
+  <h2>📲 앱 설치</h2>
+  <p class="install-msg muted">바탕화면에 QR 주차번호판 아이콘을 만들어요.</p>
+  <button class="btn primary big install-btn" type="button">📲 앱 설치</button>
   <div class="keybox">
     <p><b>⚠️ 이 페이지 주소가 열쇠예요.</b> 잃어버리면 다시 찾을 수 없어요 (개인정보를 받지 않기 때문).
-      아래에서 <b>앱을 설치</b>하면 바탕화면 아이콘으로 바로 열려요.</p>
+      앱을 설치하면 바탕화면 아이콘으로 바로 열려요.</p>
     <button class="btn small" data-copy="${esc(manageUrl)}">관리 링크 복사</button>
   </div>
 </section>
 
-<section class="card" id="install">
-  <h2>① 앱 설치</h2>
-  <p class="install-msg muted">바탕화면에 QR 주차번호판 아이콘을 만들어요.</p>
-  <button class="btn primary big install-btn" type="button">📲 앱 설치</button>
-</section>
-
-<section class="card" id="push" data-token="${esc(plate.manage_token)}" data-key="${esc(vapidKey)}" data-code="${esc(plate.code)}" data-plate="${esc(plate.nickname)}">
-  <h2>② 알림 켜기</h2>
+<section class="card" id="push" data-token="${t}" data-key="${esc(vapidKey)}" data-code="${esc(plate.code)}" data-plate="${esc(plate.nickname)}">
+  <h2>🔔 알림</h2>
   <div class="push-msg flash warn">확인 중…</div>
   <div id="sound-hint" class="flash small" hidden>🔊 화면을 한 번 눌러 두면, 앱을 열어 둔 동안 연락이 왔을 때 소리로 알려 드려요.</div>
-  <div id="live-alert" class="live-alert" hidden></div>
-  <div class="stack">
-    <button class="btn primary push-on" type="button">🔔 알림 켜기</button>
-    <button class="btn primary push-test" type="button" hidden>테스트 알림 보내기</button>
+  <button class="btn primary big push-on" type="button">🔔 알림 켜기</button>
+  <div class="btn-row">
+    <button class="btn push-test" type="button" hidden>🧪 테스트 알림</button>
     <button class="btn push-off" type="button" hidden>이 기기 알림 끄기</button>
   </div>
   <h3>알림 받는 기기 (${devices.length})</h3>
@@ -273,18 +307,24 @@ ${created ? `<section class="card hero"><div class="big-emoji">🎉</div><h1>카
   </details>
 </section>
 
+<section class="card" id="alerts"><h2>📨 최근 알림</h2>
+  ${alerts.some((a) => a.sender) ? '<p class="muted small">👤 A, B… 는 보낸 사람이에요. 같은 글자면 같은 사람(같은 휴대폰)이 보낸 연락이에요.</p>' : ''}
+  <ul class="list">${rows}</ul></section>
+
 <section class="card stack">
-  <h2>③ 카드를 차에 두기</h2>
+  <h2>🪪 QR 카드</h2>
   ${orderBox(ctx, plate.code)}
-  <a class="btn" href="/m/${esc(plate.manage_token)}/print" target="_blank">🖨️ 직접 출력하기</a>
-  <p class="muted small">직접 출력은 컴퓨터에서 하는 게 편해요. 위의 '관리 링크 복사'로 주소를 보내 컴퓨터에서 여세요.</p>
-  <a class="btn" href="/c/${esc(plate.code)}">연락하는 사람 화면 미리 보기</a>
+  <div class="btn-row">
+    <a class="btn" href="/m/${t}/print" target="_blank">🖨️ 직접 출력</a>
+    <a class="btn" href="/c/${esc(plate.code)}">👀 상대 화면 보기</a>
+  </div>
+  <p class="muted small">직접 출력은 컴퓨터에서 하는 게 편해요. '관리 링크 복사'로 주소를 보내 컴퓨터에서 여세요.</p>
 </section>
 
-<section class="card">
-  <h2>설정</h2>
+<section class="card" id="settings">
+  <h2>⚙️ 설정</h2>
   ${saved ? flash('저장했어요', 'ok') : ''}
-  <form method="post" action="/m/${esc(plate.manage_token)}/settings" class="stack">
+  <form method="post" action="/m/${t}/settings" class="stack">
     ${flash(error)}
     <label>차량 번호 뒷 4자리 <b class="req">(필수)</b> ${plateInput(plate.nickname)}</label>
     <div class="row">
@@ -293,20 +333,22 @@ ${created ? `<section class="card hero"><div class="big-emoji">🎉</div><h1>카
     </div>
     <p class="muted small">방해 금지 시간에는 연락하는 사람이 '급한 상황'에 체크한 경우에만 알림이 와요.</p>
     <p class="muted small">📞 전화 연결을 원하면 <b>출력 화면</b>에서 번호를 넣어 출력하세요. 번호는 이 휴대폰에서 QR에만 들어가고 서버에는 저장되지 않아요.</p>
-    <button class="btn">저장</button>
+    <button class="btn primary">저장</button>
   </form>
 </section>
 
-<section class="card"><h2>최근 알림</h2>
-  ${alerts.some((a) => a.sender) ? '<p class="muted small">👤 A, B… 는 보낸 사람이에요. 같은 글자면 같은 사람(같은 휴대폰)이 보낸 연락이에요.</p>' : ''}
-  <ul class="list">${rows}</ul></section>
+<div id="push-slot"></div>
 
 <section class="card">
-  <form method="post" action="/m/${esc(plate.manage_token)}/delete" onsubmit="if (!confirm('카드를 삭제하면 출력한 QR도 더 이상 쓸 수 없어요. 삭제할까요?')) return false; if (window.MyCards) MyCards.remove('${esc(plate.manage_token)}');">
-    <button class="btn danger">카드 삭제</button>
-  </form>
+  <details class="more"><summary>🔑 관리 링크 · 카드 삭제</summary>
+    <p class="muted small">이 화면 주소가 카드의 열쇠예요. 다른 기기에서 열 때 쓰세요.</p>
+    <button class="btn small" data-copy="${esc(manageUrl)}">관리 링크 복사</button>
+    <form method="post" action="/m/${t}/delete" class="danger-zone" onsubmit="if (!confirm('카드를 삭제하면 출력한 QR도 더 이상 쓸 수 없어요. 삭제할까요?')) return false; if (window.MyCards) MyCards.remove('${t}');">
+      <button class="btn danger">카드 삭제</button>
+    </form>
+  </details>
 </section>`, {
-    head: `<link rel="manifest" href="/m/${esc(plate.manage_token)}/manifest.webmanifest">
+    head: `<link rel="manifest" href="/m/${t}/manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="${esc(ctx.serviceName)}">`,
     scripts: '<script src="/mycards.js"></script><script src="/sound.js"></script><script src="/app.js"></script>',
   });

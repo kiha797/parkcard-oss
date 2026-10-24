@@ -216,7 +216,20 @@ export function manage(ctx, plate, { alerts, devices, vapidKey, manageUrl, qrSvg
     `<option value="${h}" ${sel === h ? 'selected' : ''}>${String(h).padStart(2, '0')}:00</option>`)].join('');
   // 응답하지 않은 알림은 바로 답하기
   const replyLink = (a, label) => `<a class="btn small ${a.status === 'sent' ? 'primary' : ''}" href="/r/${esc(a.id)}/${esc(a.owner_key)}">${label}</a>`;
-  const rows = alerts.map((a) => `<li><b>${kstString(a.created_at)}</b> ${esc(a.message)}
+  // 보낸 사람 구분: 처음 연락한 순서대로 A, B, C… (같은 글자 = 같은 사람)
+  const who = {}, count = {};
+  [...alerts].reverse().forEach((a) => {
+    if (!a.sender) return;
+    if (!(a.sender in who)) who[a.sender] = Object.keys(who).length;
+    count[a.sender] = (count[a.sender] || 0) + 1;
+  });
+  const senderChip = (a) => {
+    if (!a.sender) return '';
+    const n = who[a.sender];
+    const name = n < 26 ? String.fromCharCode(65 + n) : String(n + 1);
+    return `<span class="who who-${n % 6}" title="같은 글자는 같은 사람이 보낸 연락이에요">👤 ${name}${count[a.sender] > 1 ? ` · ${count[a.sender]}회` : ''}</span>`;
+  };
+  const rows = alerts.map((a) => `<li>${senderChip(a)} <b>${kstString(a.created_at)}</b> ${esc(a.message)}
     <span class="tag ${a.status}">${a.status === 'ack' ? esc(a.ack_text) : a.status === 'failed' ? '전달 실패' : '응답 안 함'}</span>
     ${a.status === 'sent' ? replyLink(a, '답하기') : ''}</li>`).join('')
     || '<li class="muted">아직 받은 알림이 없어요</li>';
@@ -284,7 +297,9 @@ ${created ? `<section class="card hero"><div class="big-emoji">🎉</div><h1>카
   </form>
 </section>
 
-<section class="card"><h2>최근 알림</h2><ul class="list">${rows}</ul></section>
+<section class="card"><h2>최근 알림</h2>
+  ${alerts.some((a) => a.sender) ? '<p class="muted small">👤 A, B… 는 보낸 사람이에요. 같은 글자면 같은 사람(같은 휴대폰)이 보낸 연락이에요.</p>' : ''}
+  <ul class="list">${rows}</ul></section>
 
 <section class="card">
   <form method="post" action="/m/${esc(plate.manage_token)}/delete" onsubmit="if (!confirm('카드를 삭제하면 출력한 QR도 더 이상 쓸 수 없어요. 삭제할까요?')) return false; if (window.MyCards) MyCards.remove('${esc(plate.manage_token)}');">
@@ -315,6 +330,7 @@ export function about(ctx) {
   <li>차주 기기의 푸시 알림 주소 — 브라우저가 만든 무작위 주소로, 이름·전화번호가 아닙니다</li>
   <li>알림 내용과 시각 — 90일 후 자동 삭제 (직접 입력 칸에 개인정보를 쓰지 마세요)</li>
   <li>장난 알림 방지용 접속 기록 — 원래 IP가 아닌 변환된 값으로만, 하루 후 삭제</li>
+  <li>보낸 사람 구분값 — 차주가 같은 사람의 연락인지 알 수 있게, 보낸 사람 휴대폰의 무작위 값을 카드마다 다르게 변환해 알림과 함께 저장 (이름·전화번호가 아니며, 다른 카드와 연결할 수 없음)</li>
 </ul>
 <h2>전화 연결 번호</h2>
 <p>차주가 원하면 <b>자기 휴대폰에서</b> 출력할 때 번호를 QR 안에 넣을 수 있습니다.

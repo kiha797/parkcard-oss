@@ -195,7 +195,19 @@
     var list = result.querySelector('.sent-list');
     var latest = result.querySelector('.latest-ack');
     var notify = result.querySelector('.notify-box');
-    var canSend = !btn.disabled;   // 차주 기기가 없으면 처음부터 막혀 있음
+    var canSend = !btn.disabled;
+    // 보낸 사람 구분용 무작위 값 (이 휴대폰에만 저장, 차주에게는 'A·B…' 글자로만 보임)
+    var withSender = function (params) {
+      try {
+        var sid = localStorage.getItem('parkcard-sid');
+        if (!sid) {
+          sid = Array.from(crypto.getRandomValues(new Uint8Array(12)), function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+          localStorage.setItem('parkcard-sid', sid);
+        }
+        params.set('sid', sid);
+      } catch (e) { /* 저장 불가 → 서버가 변환된 IP로 구분 */ }
+      return params;
+    };   // 차주 기기가 없으면 처음부터 막혀 있음
 
     // 진행 단계: 보냄 → 전달 → 차주 확인 → 응답
     var stepsHtml = function (it) {
@@ -315,7 +327,7 @@
       fetch(form.action, {
         method: 'POST',
         headers: { 'X-Requested-With': 'fetch' },
-        body: new URLSearchParams(new FormData(form)),
+        body: withSender(new URLSearchParams(new FormData(form))),
       }).then(function (r) { return r.json(); }).then(function (d) {
         if (!d.ok) {
           msg.innerHTML = '<div class="flash err">' + d.error + '</div>';

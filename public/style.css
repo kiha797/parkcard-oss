@@ -42,6 +42,8 @@ label.inline{display:flex;gap:8px;align-items:flex-start;font-weight:400}label.i
 .list{list-style:none;padding:0;margin:0}.list li{padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
 .tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:99px;background:var(--bg);color:var(--muted)}
 .tag.ack{color:var(--ok)}.tag.failed{color:var(--err)}
+.who{display:inline-block;font-size:12px;font-weight:700;padding:1px 8px;border-radius:99px;color:#fff;white-space:nowrap}
+.who-0{background:#2563eb}.who-1{background:#d97706}.who-2{background:#059669}.who-3{background:#db2777}.who-4{background:#7c3aed}.who-5{background:#475569}
 .prose h2{margin-top:16px}
 footer{text-align:center;font-size:12px;margin-top:20px}footer a{color:var(--muted)}
 h3{font-size:15px;margin:16px 0 4px}

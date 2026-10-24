@@ -56,6 +56,11 @@ const ipKey = async (c) => (await U.sha256hex(c.req.header('CF-Connecting-IP') |
 // 같은 사람이 같은 카드에 다시 보낼 수 있을 때까지의 간격
 const RESEND_MS = 20_000;
 const resendKey = async (c, code) => `a:${await ipKey(c)}:${code}`;
+// 같은 사람 구분: 보낸 사람 휴대폰에 저장된 무작위 값(없으면 변환된 IP)을 카드마다 다르게 변환
+const senderTag = async (c, code, sid) => {
+  const id = /^[A-Za-z0-9_-]{8,40}$/.test(String(sid || '')) ? `s:${sid}` : `ip:${await ipKey(c)}`;
+  return (await U.sha256hex(`sender:${code}:${id}`)).slice(0, 12);
+};
 // 다시 보낼 수 있을 때까지 남은 초 (0이면 바로 가능)
 async function waitLeft(c, key) {
   const r = await one(c, 'SELECT MAX(at) m FROM hits WHERE key = ?', key);
@@ -146,8 +151,8 @@ app.post('/c/:code/alert', async (c) => {
   const message = custom || V.TEMPLATES[Number(body.tpl)] || V.TEMPLATES[0];
 
   const alert = { id: U.randomToken(9), owner_key: U.randomToken(9) };
-  await run(c, 'INSERT INTO alerts (id, owner_key, code, message, urgent, created_at) VALUES (?, ?, ?, ?, ?, ?)',
-    alert.id, alert.owner_key, plate.code, message, urgent ? 1 : 0, Date.now());
+  await run(c, 'INSERT INTO alerts (id, owner_key, code, message, urgent, created_at, sender) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    alert.id, alert.owner_key, plate.code, message, urgent ? 1 : 0, Date.now(), await senderTag(c, plate.code, body.sid));
 
   const { delivered, error } = await pushToPlate(c, plate.code, {
     title: `${urgent ? '🚨 [긴급] ' : '🚗 '}${plate.nickname ? `${plate.nickname} 차량` : '내 차'} 연락이 왔어요`,

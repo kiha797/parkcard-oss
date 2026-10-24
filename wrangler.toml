@@ -1,0 +1,43 @@
+# Cloudflare Workers 설정
+name = "parkcard"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+# public 폴더의 파일(sw.js, 아이콘, css)은 Cloudflare가 바로 전달
+[assets]
+directory = "./public"
+
+[vars]
+SERVICE_NAME = "QR 주차번호판"
+# QR 주소를 대문자로 인코딩 (QR이 단순해져 인식률 상승)
+QR_UPPERCASE = "true"
+# 푸시 서버(애플·구글)에 알리는 운영자 연락처 (이메일은 mailto:주소, 또는 사이트 주소)
+VAPID_SUBJECT = "mailto:you@example.com"
+# 카드형 번호판 주문 쇼핑몰 (비워 두면 주문 버튼을 숨김). 쇼핑몰에는 카드 코드만 전달됨
+ORDER_URL = ""
+ORDER_NAME = "쇼핑몰"
+# AGPL: 서비스 이용자에게 알려 줄 소스 코드 주소 (공개 오픈소스 저장소)
+SOURCE_URL = ""
+
+# 데이터베이스. 직접 설치한다면 'wrangler d1 create parkcard' 결과로 나온 id로 바꾸세요
+[[d1_databases]]
+binding = "DB"
+database_name = "parkcard"
+database_id = "00000000-0000-0000-0000-000000000000"
+
+# 매일 새벽 오래된 기록 정리
+[triggers]
+crons = ["0 19 * * *"]
+
+# 연결할 도메인. 직접 설치한다면 내 도메인으로 바꾸거나, 아래 세 줄을 지우면 workers.dev 주소로 동작
+# [[routes]]
+# pattern = "p.example.com"
+# custom_domain = true
+
+# Cloudflare 대시보드에서 오류 기록(로그)을 볼 수 있게
+[observability]
+enabled = true
+
+# 배포 버전 정보 (열려 있는 화면이 새 버전을 알아채고 자동으로 새로고침하는 데 사용)
+[version_metadata]
+binding = "CF_VERSION_METADATA"

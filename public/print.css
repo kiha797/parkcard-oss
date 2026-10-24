@@ -1,0 +1,78 @@
+/* 출력 화면 — mm 단위 실제 크기 */
+@page{size:A4;margin:10mm}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:#000;background:#fff;
+  -webkit-print-color-adjust:exact;print-color-adjust:exact}
+.bar{padding:12px;background:#eef2ff;font-size:14px;line-height:1.7}
+.bar a{color:#1d4ed8}.bar a.on{font-weight:800;text-decoration:none;color:#111}
+.bar button{padding:8px 14px;font:inherit;font-weight:700;border:0;border-radius:8px;background:#2563eb;color:#fff;cursor:pointer;margin-right:8px}
+.bar .row{margin-top:6px}
+.bar .tel{margin-top:10px;padding:10px;background:#fff;border-radius:8px}
+.bar .tel input{font:inherit;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;width:170px;margin:4px 6px 4px 0}
+.bar small{color:#475569}
+.bar .ok{color:#15803d;font-weight:700}.bar .err{color:#b91c1c;font-weight:700}
+
+/* 큰 카드 · 스티커 */
+.big,.sticker{display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+  border:0.3mm dashed #999;background:#fff;break-inside:avoid;text-align:center}
+.big{width:110mm;height:160mm;margin:10mm auto;padding:8mm}
+.big .t1{font-size:7mm;font-weight:800}
+.big .qr{width:70mm;height:70mm}
+.big .code{font:800 13mm/1 ui-monospace,Consolas,monospace;letter-spacing:2mm}
+.big .how{font-size:4mm}.big .note{font-size:3.2mm;color:#444}
+.grid{display:grid;grid-template-columns:repeat(3,60mm);gap:4mm;justify-content:center;margin-top:6mm}
+.sticker{width:60mm;height:88mm;padding:4mm}
+.sticker .t1{font-size:4mm;font-weight:800}
+.sticker .qr{width:42mm;height:42mm}
+.sticker .code{font:800 8mm/1 ui-monospace,Consolas,monospace;letter-spacing:1mm}
+.sticker .how{font-size:2.6mm}.sticker .note{display:none}
+.qr svg{width:100%;height:100%;display:block}
+
+/* 카드형: 신용카드 크기 85.6 × 54 mm. QR은 어떤 색상이든 흰 바탕 */
+.cards{display:flex;flex-wrap:wrap;gap:8mm;justify-content:center;margin:8mm 0}
+.cap{font-size:12px;color:#64748b;margin-bottom:4px}
+.cc{width:85.6mm;height:54mm;border-radius:3.2mm;padding:3.5mm;display:flex;gap:3mm;overflow:hidden;position:relative;
+  outline:0.2mm dashed #94a3b8;outline-offset:1mm;break-inside:avoid;
+  --bg:#fff;--fg:#0f172a;--ac:#2563eb;--mu:#475569;background:var(--bg);color:var(--fg)}
+.cc-qr{flex:0 0 47mm;height:47mm;background:#fff;border-radius:2mm;padding:0.6mm}
+.cc-side{flex:1;display:flex;flex-direction:column;justify-content:space-between;min-width:0}
+.cc-brand{font-size:2.4mm;font-weight:800;color:var(--ac);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc-title{font-size:3.3mm;font-weight:900;line-height:1.15;margin-top:0.8mm}
+.cc-code{font:900 4.6mm/1 ui-monospace,Consolas,monospace;letter-spacing:.35mm;padding:1.2mm 0;
+  border-top:0.3mm solid var(--ac);border-bottom:0.3mm solid var(--ac);text-align:center}
+.cc-host{font-size:2.2mm;color:var(--mu);text-align:center}
+.cc-back{flex-direction:column;justify-content:space-between;padding:5mm 6mm}
+.cc-b-title{font-size:4mm;font-weight:900;color:var(--ac)}
+.cc-back ol{margin:1mm 0 0;padding-left:5mm;font-size:3mm;line-height:1.55}
+.cc-b-note{font-size:2.8mm;font-weight:800}
+.cc-b-foot{font-size:2.3mm;color:var(--mu)}
+.t-navy{--bg:#1e3a8a;--fg:#fff;--ac:#fbbf24;--mu:#c7d2fe}
+.t-black{--bg:#111827;--fg:#fff;--ac:#4ade80;--mu:#cbd5e1}
+.t-yellow{--bg:#facc15;--fg:#111827;--ac:#111827;--mu:#3f3f46}
+.t-mint{--bg:#ccfbf1;--fg:#134e4a;--ac:#0d9488;--mu:#115e59}
+
+@media print{.bar,.cap{display:none}.cards{margin:0}}
+
+/* '카메라로 QR을 찍어 주세요' — 멀리서도 보이게 크게, 검정 띠 */
+.scan{display:flex;align-items:center;justify-content:center;background:#111;color:#fff;border-radius:3mm;line-height:1.15;white-space:nowrap}
+.scan-txt{display:flex;flex-direction:column;text-align:left}
+.scan-txt small{font-weight:700;opacity:.9}
+.scan-txt b{color:#facc15;font-weight:900}
+.scan-arrow{color:#111;line-height:1}
+.big .scan{gap:3mm;padding:3mm 6mm}.big .scan-ico{font-size:9mm}.big .scan-txt small{font-size:4.6mm}.big .scan-txt b{font-size:7.2mm}
+.big .scan-arrow{font-size:6mm;margin-top:-2mm}
+.sticker .scan{gap:1.6mm;padding:1.6mm 3mm;border-radius:2mm}.sticker .scan-ico{font-size:5mm}.sticker .scan-txt small{font-size:2.6mm}
+.sticker .scan-txt b{font-size:4mm}.sticker .scan-arrow{font-size:3.2mm;margin-top:-1mm}
+.sticker .qr{width:40mm;height:40mm}
+.cc-scan{display:flex;align-items:center;gap:1.2mm;background:var(--ac);color:var(--bg);border-radius:1.6mm;padding:1.6mm 2mm;
+  font-size:3.3mm;font-weight:800;line-height:1.2}
+.cc-scan b{font-size:3.9mm;font-weight:900}
+.cc-scan-arrow{font-size:3.4mm}
+
+/* 출력 화면: 전화 번호 상태와 QR 내용 */
+.tel-msg{margin:2px 0 6px;min-height:1.2em}.tel-msg .wait{color:#b45309;font-weight:700}
+.qr-info{border:1px solid #cbd5e1;border-radius:8px;padding:8px 10px;margin:6px 0 8px;background:#f8fafc;max-width:520px}
+.qi-title{font-weight:800;margin-bottom:4px}
+.qi-row{display:flex;justify-content:space-between;gap:12px;padding:2px 0}
+.qi-row .on{color:#15803d}.qi-row .off{color:#64748b}
+.qi-raw{margin-top:4px;font:12px ui-monospace,Consolas,monospace;color:#475569;word-break:break-all}

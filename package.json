@@ -1,0 +1,24 @@
+{
+  "name": "parkcard",
+  "version": "2.0.0",
+  "license": "AGPL-3.0-or-later",
+  "description": "전화번호 없는 주차 연락 카드 — QR + 웹 푸시, Cloudflare Workers용 (오픈소스)",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler d1 migrations apply parkcard --local && wrangler dev",
+    "db:migrate": "wrangler d1 migrations apply parkcard --remote",
+    "deploy": "wrangler d1 migrations apply parkcard --remote && wrangler deploy"
+  },
+  "dependencies": {
+    "hono": "^4.13.13",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "wrangler": "^4.152.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "workerd@1.20261019.1": true
+  }
+}

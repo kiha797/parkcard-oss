@@ -13,7 +13,7 @@ app.use('*', async (c, next) => {
     serviceName: c.env.SERVICE_NAME || 'QR 주차번호판',
     orderUrl: c.env.ORDER_URL || '',          // 카드 주문 쇼핑몰 (비우면 주문 버튼 숨김)
     orderName: c.env.ORDER_NAME || '쇼핑몰',
-    sourceUrl: c.env.SOURCE_URL || 'https://github.com/kiha797/parkcard',   // AGPL: 소스 코드 위치
+    sourceUrl: c.env.SOURCE_URL || '',   // 소스 코드 주소 (비워 두면 링크를 표시하지 않음)
     version: c.env.CF_VERSION_METADATA?.id || 'dev',   // 배포할 때마다 바뀜
   });
   await next();

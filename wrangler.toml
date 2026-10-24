@@ -16,7 +16,8 @@ VAPID_SUBJECT = "mailto:you@example.com"
 # 카드형 번호판 주문 쇼핑몰 (비워 두면 주문 버튼을 숨김). 쇼핑몰에는 카드 코드만 전달됨
 ORDER_URL = ""
 ORDER_NAME = "쇼핑몰"
-# AGPL: 서비스 이용자에게 알려 줄 소스 코드 주소 (공개 오픈소스 저장소)
+# 화면 아래에 보여 줄 소스 코드 주소 (비워 두면 표시 안 함)
+# 공개판을 고쳐서 서비스로 운영하는 사람은 AGPL에 따라 자기 소스 주소를 넣어야 함
 SOURCE_URL = ""
 
 # 데이터베이스. 직접 설치한다면 'wrangler d1 create parkcard' 결과로 나온 id로 바꾸세요

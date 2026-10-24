@@ -27,7 +27,7 @@ export function layout(ctx, title, body, { head = '', scripts = '' } = {}) {
 <body><main>
 <header class="top"><a href="/" class="logo">🚗 ${esc(ctx.serviceName)}${ctx.serviceName === GENERIC_NAME ? '' : ` <span class="logo-sub">${GENERIC_NAME}</span>`}</a></header>
 ${body}
-<footer><a href="/about">이 서비스는?</a> · <a href="${esc(ctx.sourceUrl || '#')}" target="_blank" rel="noopener">소스 코드</a></footer>
+<footer><a href="/about">이 서비스는?</a>${ctx.sourceUrl ? ` · <a href="${esc(ctx.sourceUrl)}" target="_blank" rel="noopener">소스 코드</a>` : ''}</footer>
 </main>${scripts}<script src="/update.js"></script></body></html>`;
 }
 
@@ -371,7 +371,7 @@ export function about(ctx) {
   return layout(ctx, '이 서비스는?', `<section class="card prose">
 <h1>이 서비스는?</h1>
 <p>차 안에 둔 QR 카드를 찍으면, 차주 휴대폰으로 <b>푸시 알림</b>이 가는 무료 주차 연락 서비스입니다.
-누구나 무료로 쓰고 직접 출력할 수 있는 <b>오픈소스</b>입니다 (AGPL-3.0 라이선스, <a href="${esc(ctx.sourceUrl)}" target="_blank" rel="noopener">소스 코드</a>).</p>
+누구나 무료로 쓰고 직접 출력할 수 있어요.${ctx.sourceUrl ? ` <b>오픈소스</b>입니다 (AGPL-3.0 라이선스, <a href="${esc(ctx.sourceUrl)}" target="_blank" rel="noopener">소스 코드</a>).` : ''}</p>
 <h2>개인정보를 수집하지 않습니다</h2>
 <p>이름, 전화번호, 전체 차량번호, 위치, 연락하는 사람의 정보는 <b>서버에 저장하지 않습니다.</b></p>
 <h2>서버에 저장하는 것</h2>

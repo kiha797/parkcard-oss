@@ -144,10 +144,6 @@ export function alertStatus(ctx, alert, plate, { wait = 0 } = {}) {
 }
 
 export function statusInner(alert) {
-  if (alert.done_at) {
-    return `<div class="ack">🚗 차주가 차를 이동했어요</div>
-      <p class="muted">${kstString(alert.done_at)} 이동 완료 · 응답 "${esc(alert.ack_text)}"</p>`;
-  }
   if (alert.status === 'ack') {
     return `<div class="ack">✅ 차주 응답: <b>${esc(alert.ack_text)}</b></div>
       <p class="muted">${kstString(alert.ack_at)} 응답</p>`;
@@ -170,12 +166,9 @@ export function ownerReply(ctx, alert, plate) {
   <p>받은 요청: <b>"${esc(alert.message)}"</b></p>
   <p class="muted">${kstString(alert.created_at)} · <b>${ago ? `${ago}분 전` : '방금'}</b> 요청${alert.urgent ? ' · 🚨 긴급' : ''}</p>
 </section>
-${alert.done_at ? `<section class="card"><div class="ack">🚗 이동 완료를 알렸어요</div>
-  <p class="muted">요청한 분 화면에 "차주가 차를 이동했어요"로 표시돼요.</p></section>`
-    : answered ? `<section class="card stack"><div class="ack">✅ 보낸 응답: <b>${esc(alert.ack_text)}</b></div>
-  <p class="muted">요청한 분 화면에 바로 표시돼요. 차를 옮겼으면 아래를 눌러 알려 주세요.</p>
-  <form method="post"><button name="done" value="1" class="btn primary big">🚗 차를 이동했어요 (완료)</button></form></section>`
-      : `<form method="post" class="card stack">
+${answered ? `<section class="card"><div class="ack">✅ 보낸 응답: <b>${esc(alert.ack_text)}</b></div>
+  <p class="muted">요청한 분 화면에 바로 표시돼요.</p></section>`
+    : `<form method="post" class="card stack">
   <h2>요청한 분에게 답하기</h2>
   ${buttons}
 </form>`}
@@ -221,11 +214,11 @@ export function plateRequired(ctx, plate, { error } = {}) {
 export function manage(ctx, plate, { alerts, devices, vapidKey, manageUrl, qrSvg, saved, created, error }) {
   const hours = (sel) => ['<option value="">없음</option>', ...Array.from({ length: 24 }, (_, h) =>
     `<option value="${h}" ${sel === h ? 'selected' : ''}>${String(h).padStart(2, '0')}:00</option>`)].join('');
-  // 응답하지 않은 알림은 바로 답하기, 응답만 하고 이동 완료를 안 알린 알림은 완료 알리기
+  // 응답하지 않은 알림은 바로 답하기
   const replyLink = (a, label) => `<a class="btn small ${a.status === 'sent' ? 'primary' : ''}" href="/r/${esc(a.id)}/${esc(a.owner_key)}">${label}</a>`;
   const rows = alerts.map((a) => `<li><b>${kstString(a.created_at)}</b> ${esc(a.message)}
-    <span class="tag ${a.status}">${a.done_at ? '🚗 이동 완료' : a.status === 'ack' ? esc(a.ack_text) : a.status === 'failed' ? '전달 실패' : '응답 안 함'}</span>
-    ${a.status === 'sent' ? replyLink(a, '답하기') : a.status === 'ack' && !a.done_at ? replyLink(a, '이동 완료 알리기') : ''}</li>`).join('')
+    <span class="tag ${a.status}">${a.status === 'ack' ? esc(a.ack_text) : a.status === 'failed' ? '전달 실패' : '응답 안 함'}</span>
+    ${a.status === 'sent' ? replyLink(a, '답하기') : ''}</li>`).join('')
     || '<li class="muted">아직 받은 알림이 없어요</li>';
   const devs = devices.map((d) => `<li>${esc(d.device || '기기')} <span class="muted small">${kstString(d.created_at)} 등록</span>
     <form method="post" action="/m/${esc(plate.manage_token)}/devices/${d.id}/delete" class="inline-form"><button class="linkbtn">삭제</button></form></li>`).join('')

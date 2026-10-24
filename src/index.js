@@ -177,7 +177,7 @@ app.get('/api/a/:id', async (c) => {
   return c.json({
     status: alert.status, html: V.statusInner(alert),
     code: alert.code, message: alert.message, created_at: alert.created_at,
-    ack_text: alert.ack_text, ack_at: alert.ack_at, seen_at: alert.seen_at, done_at: alert.done_at,
+    ack_text: alert.ack_text, ack_at: alert.ack_at, seen_at: alert.seen_at,
   });
 });
 
@@ -220,10 +220,7 @@ app.post('/r/:id/:key', async (c) => {
   if (!found) return html(c, V.notFound(c.get('ctx'), '알림을 찾을 수 없어요'), 404);
   const { alert, plate } = found;
   const body = await c.req.parseBody();
-  // '차를 이동했어요' (응답 뒤에만)
-  if (body.done === '1' && alert.status === 'ack' && !alert.done_at) {
-    await run(c, 'UPDATE alerts SET done_at = ? WHERE id = ?', Date.now(), alert.id);
-  }
+  // 응답은 한 번만 (먼저 보낸 응답 유지)
   const text = alert.status === 'ack' ? null : V.REPLIES[Number(body.r)];
   if (text) {
     await run(c, "UPDATE alerts SET status = 'ack', ack_text = ?, ack_at = ? WHERE id = ?", text, Date.now(), alert.id);
